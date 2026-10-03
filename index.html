@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>分享请假信息 · 昨天网吧</title>
+
+<!-- 微信分享卡片标签：使用相对路径，微信抓取时会自动补全为真实绝对地址，部署无需改文件 -->
+<meta property="og:title" content="分享请假信息"/>
+<meta property="og:description" content="昨天网吧请假助手 · 请假详情"/>
+<meta property="og:type" content="website"/>
+<meta property="og:image" content="og.png"/>
+<meta property="og:url" content="index.html"/>
+<meta name="format-detection" content="telephone=no"/>
+
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#f2f3f5;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",Arial,sans-serif;color:#222}
+.banner{background:linear-gradient(180deg,#4ca666,#61cd77);padding:26px 20px 22px;color:#fff;display:flex;align-items:center}
+.face{width:64px;height:64px;border-radius:50%;background:#fae17d;border:3px solid #fff;position:relative;flex:0 0 auto;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.face .eye{position:absolute;top:24px;width:7px;height:7px;border-radius:50%;background:#5a4a12}
+.face .eye.l{left:18px}.face .eye.r{right:18px}
+.face .blush{position:absolute;top:34px;width:9px;height:6px;border-radius:50%;background:rgba(217,86,80,.35)}
+.face .blush.l{left:13px}.face .blush.r{right:13px}
+.face .mouth{position:absolute;left:50%;top:38px;width:26px;height:13px;margin-left:-13px;border:3px solid #5a4a12;border-top:none;border-radius:0 0 26px 26px}
+.banner-txt{margin-left:16px;flex:1 1 auto;min-width:0}
+.banner-state{font-size:26px;font-weight:600;letter-spacing:1px}
+.banner-sub{margin-top:4px;font-size:14px;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.body{padding:14px 14px 26px}
+.card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card-h{font-size:15px;font-weight:600;color:#333;margin-bottom:10px;padding-left:9px;border-left:3px solid #4ca666}
+.card-b{font-size:14px;line-height:1.6;color:#444;white-space:pre-wrap;word-break:break-word}
+.kv{display:flex;font-size:14px;line-height:1.9;padding:3px 0}
+.kv .k{flex:0 0 84px;color:#999}.kv .v{flex:1 1 auto;color:#333;word-break:break-word}
+.timeline{position:relative;padding-left:6px}
+.node{display:flex;align-items:flex-start;padding:6px 0}
+.dot{width:12px;height:12px;border-radius:50%;margin:4px 12px 0 0;flex:0 0 auto;box-shadow:0 0 0 3px rgba(0,0,0,.04)}
+.node-body{flex:1 1 auto;min-width:0}
+.node-role{font-size:14px;font-weight:600;color:#333}
+.node-meta{font-size:12px;color:#999;margin-top:2px}
+.node-idea{font-size:13px;color:#666;margin-top:4px;background:#f7f8fa;border-radius:6px;padding:6px 8px}
+.remind{display:flex;font-size:13px;padding:5px 0;border-bottom:1px dashed #eee}
+.remind:last-child{border-bottom:none}
+.remind-d{color:#999;flex:0 0 92px}.remind-m{color:#444;flex:1 1 auto}
+.attach{width:90px;height:120px;object-fit:cover;border-radius:8px;border:1px solid #eee}
+.footer{text-align:center;font-size:12px;color:#aaa;padding:6px 0 4px}
+.empty{padding:60px 20px;text-align:center;color:#999;font-size:15px;line-height:1.8}
+</style>
+</head>
+<body>
+<div id="app"><div class="empty">加载中…</div></div>
+<script>
+(function(){
+  function b64d(s){
+    var bin = atob(s);
+    var bytes = [];
+    for (var i=0;i<bin.length;i++) bytes.push('%'+('00'+bin.charCodeAt(i).toString(16)).slice(-2));
+    return decodeURIComponent(bytes.join(''));
+  }
+  function esc(s){
+    if(s===undefined||s===null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  var TONE={ '待审批':{c1:'#f0a64e',c2:'#f6c174'},'审批中':{c1:'#5b8def',c2:'#7fa6f5'},'审批已通过':{c1:'#4ca666',c2:'#61cd77'},'正在休假中':{c1:'#4ca666',c2:'#61cd77'},'已驳回':{c1:'#d95650',c2:'#ef8079'},'已撤回':{c1:'#8a93a3',c2:'#aab2bf'},'已完成':{c1:'#8a93a3',c2:'#aab2bf'} };
+  var DOT={ '待审批':'#f0a64e','审批中':'#5b8def','审批已通过':'#4ca666','已驳回':'#d95650','已撤回':'#8a93a3','已完成':'#8a93a3' };
+  function row(label,value){
+    if(!value) return '';
+    return '<div class="kv"><span class="k">'+esc(label)+'</span><span class="v">'+esc(value)+'</span></div>';
+  }
+  function render(l){
+    var tone = TONE[l.state]||TONE['待审批'];
+    var name = l.name||'同学'; var type = l.type||'请假';
+    var base = row('开始时间',l.startDate)+row('结束时间',l.endDate)+row('请假时长',l.countDate)+row('是否离校',l.isLeave)+row('申请时间',l.applyDate)+row('抄送人',l.cc);
+    var reason='';
+    if(l.reason) reason+='<div class="card"><div class="card-h">请假原因</div><div class="card-b">'+esc(l.reason)+'</div></div>';
+    if(l.illDesc) reason+='<div class="card"><div class="card-h">病情描述</div><div class="card-b">'+esc(l.illDesc)+'</div></div>';
+    var contact = row('紧急联系人',l.emergencyContact)+row('目的地',l.destination)+row('详细地址',l.address)+row('宿舍',l.roomInfo);
+    var contactBlock = contact?'<div class="card"><div class="card-h">联系与去向</div>'+contact+'</div>':'';
+    var flow='';
+    var flowArr = Array.isArray(l.flow)?l.flow:[];
+    if(l.needApprove!==false && flowArr.length){
+      var nodes='';
+      flowArr.forEach(function(n){
+        var st=n.status||'待审批'; var color=DOT[st]||'#f0a64e';
+        var idea=(n.idea&&n.idea!=='无')?esc(n.idea):'';
+        nodes+='<div class="node"><div class="dot" style="background:'+color+'"></div><div class="node-body"><div class="node-role">'+esc(n.role||'')+'</div><div class="node-meta">'+esc(n.name||'')+' · '+esc(st)+(n.date?' · '+esc(n.date):'')+'</div>'+(idea?'<div class="node-idea">'+idea+'</div>':'')+'</div></div>';
+      });
+      flow='<div class="card"><div class="card-h">审批流程</div><div class="timeline">'+nodes+'</div></div>';
+    } else if(l.needApprove===false){
+      flow='<div class="card"><div class="card-h">审批流程</div><div class="card-b" style="color:#4ca666">免审批，提交即生效</div></div>';
+    }
+    var remind='';
+    var reminds=Array.isArray(l.reminds)?l.reminds:[];
+    if(reminds.length){
+      var items='';
+      reminds.forEach(function(r){ items+='<div class="remind"><span class="remind-d">'+esc(r.date||'')+'</span><span class="remind-m">'+esc(r.message||'发起催办')+'</span></div>'; });
+      remind='<div class="card"><div class="card-h">催办记录</div>'+items+'</div>';
+    }
+    var attach='';
+    var img=l.imgFile||'';
+    if(img){
+      if(/^https?:/i.test(img)) attach='<div class="card"><div class="card-h">附件</div><img class="attach" src="'+esc(img)+'" alt="附件"/></div>';
+      else attach='<div class="card"><div class="card-h">附件</div><div class="card-b" style="color:#888">含附件图片（原图请在 App 内查看）</div></div>';
+    }
+    return ''+
+    '<div class="banner" style="background:linear-gradient(180deg,'+tone.c1+','+tone.c2+')">'+
+      '<div class="face"><span class="eye l"></span><span class="eye r"></span><span class="blush l"></span><span class="blush r"></span><span class="mouth"></span></div>'+
+      '<div class="banner-txt"><div class="banner-state">'+esc(l.state||'')+'</div><div class="banner-sub">'+esc(type)+' · '+esc(name)+'</div></div>'+
+    '</div>'+
+    '<div class="body">'+
+      '<div class="card"><div class="card-h">请假信息</div>'+(base||'<div class="card-b" style="color:#999">暂无信息</div>')+'</div>'+
+      reason+contactBlock+flow+remind+attach+
+      '<div class="footer">由「昨天网吧」请假助手生成</div>'+
+    '</div>';
+  }
+  function start(){
+    var app=document.getElementById('app');
+    try{
+      var h=location.hash||'';
+      var m=h.match(/[#&]d=([^&]+)/);
+      if(!m){ app.innerHTML='<div class="empty">链接缺少请假数据</div>'; return; }
+      var data=JSON.parse(b64d(m[1]));
+      app.innerHTML=render(data);
+    }catch(e){
+      app.innerHTML='<div class="empty">解析失败：'+esc(e.message)+'</div>';
+    }
+  }
+  if(document.readyState!=='loading') start();
+  else document.addEventListener('DOMContentLoaded',start);
+})();
+</script>
+</body>
+</html>
